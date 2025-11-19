@@ -1,0 +1,99 @@
+#version: '3.8'
+
+services:
+  api:
+    container_name: api
+    build:
+      context: .
+      target: php
+    env_file:
+      - ./front/.env
+    environment:
+      - APP_KEY=base64:foyKvzN0NlvsnibYHHeDbKhEI9DmuEnjOHt3kf/Ki/U=
+      - APP_ENV=local
+      - APP_URL=http://192.168.10.134:9000
+      - DB_CONNECTION=mariadb
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_DATABASE=sneat
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=secret
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - 9000:8080
+    # depends_on:
+      # mysql:
+      #   condition: service_healthy
+    #   redis:
+    #     condition: service_healthy
+      # selenium:
+      #   condition: service_started
+      # mailpit:
+      #   condition: service_started
+    networks:
+      - sneat-project_default
+
+  mysql:
+    image: 'mariadb:10.11'
+    container_name: mariadb
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: 'secret'
+      #MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: 'sneat'
+      MYSQL_USER: 'laravel'
+      MYSQL_PASSWORD: 'secret'
+    volumes:
+      - /var/lib/mariadb_data:/var/lib/mysql
+      # - ./vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh
+
+    networks:
+      - sneat-project_default
+    # healthcheck:
+    #   test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+    #   interval: 5s
+    #   retries: 5
+    #   timeout: 5s
+
+  redis:
+    image: 'redis:alpine'
+    container_name: redis
+    ports:
+      - '${FORWARD_REDIS_PORT:-6379}:6379'
+    volumes:
+      - 'sail-redis:/data'
+    networks:
+      - sneat-project_default
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      retries: 5
+      interval: 5s
+      timeout: 5s
+
+  # selenium:
+  #   image: selenium/standalone-chromium
+  #   container_name: selenium
+  #   extra_hosts:
+  #     - 'host.docker.internal:host-gateway'
+  #   volumes:
+  #     - '/dev/shm:/dev/shm'
+  #   networks:
+  #     - sneat-project_default
+
+  # mailpit:
+  #   image: 'axllent/mailpit:latest'
+  #   container_name: mailpit
+  #   ports:
+  #     - '${FORWARD_MAILPIT_PORT:-1025}:1025'
+  #     - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+  #   networks:
+  #     - sneat-project_default
+
+networks:
+  sneat-project_default:
+    driver: bridge
+
+volumes:
+  sail-redis:
